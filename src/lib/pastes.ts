@@ -35,7 +35,7 @@ function cleanupExpired(store: PasteStore) {
 
 async function readStore(): Promise<PasteStore> {
   try {
-    const raw = await readFile(STORE_FILE, "utf-8");
+    const raw = await readFile(STORE_FILE, { encoding: "utf-8", flag: "a+" });
     return JSON.parse(raw) as PasteStore;
   } catch {
     return {};
