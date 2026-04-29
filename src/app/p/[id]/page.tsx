@@ -9,7 +9,7 @@ type PastePageProps = {
 
 export default async function PastePage({ params }: PastePageProps) {
   const { id } = await params;
-  const paste = getPaste(id);
+  const paste = await getPaste(id);
   if (!paste) {
     notFound();
   }

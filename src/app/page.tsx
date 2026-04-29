@@ -53,17 +53,6 @@ export default function Home() {
     }
   }
 
-  async function copyLink() {
-    if (!shareUrl) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-    } catch {
-      setError("Could not copy link.");
-    }
-  }
-
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -90,11 +79,10 @@ export default function Home() {
 
           {shareUrl ? (
             <div className={styles.result}>
-              <p>Share this link:</p>
-              <a href={sharePath}>{shareUrl}</a>
-              <button type="button" onClick={copyLink}>
-                Copy link
-              </button>
+              <div className={styles.linkBox}>
+                <p>Share this link:</p>
+                <a href={sharePath}>{shareUrl}</a>
+              </div>
               <Image
                 src={qrUrl}
                 alt="QR code for the shared paste URL"

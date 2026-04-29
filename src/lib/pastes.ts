@@ -1,6 +1,11 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 const PASTE_TTL_MS = 24 * 60 * 60 * 1000;
 const ID_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const ID_LENGTH = 6;
+const STORE_DIR = path.join(process.cwd(), ".data");
+const STORE_FILE = path.join(STORE_DIR, "pastes.json");
 
 type PasteRecord = {
   content: string;
@@ -8,7 +13,7 @@ type PasteRecord = {
   expiresAt: number;
 };
 
-const pasteStore = new Map<string, PasteRecord>();
+type PasteStore = Record<string, PasteRecord>;
 
 function randomId() {
   let id = "";
@@ -19,19 +24,34 @@ function randomId() {
   return id;
 }
 
-function cleanupExpired() {
+function cleanupExpired(store: PasteStore) {
   const now = Date.now();
-  for (const [id, paste] of pasteStore.entries()) {
+  for (const [id, paste] of Object.entries(store)) {
     if (paste.expiresAt <= now) {
-      pasteStore.delete(id);
+      delete store[id];
     }
   }
 }
 
-export function createPaste(content: string) {
-  cleanupExpired();
+async function readStore(): Promise<PasteStore> {
+  try {
+    const raw = await readFile(STORE_FILE, "utf-8");
+    return JSON.parse(raw) as PasteStore;
+  } catch {
+    return {};
+  }
+}
+
+async function writeStore(store: PasteStore) {
+  await mkdir(STORE_DIR, { recursive: true });
+  await writeFile(STORE_FILE, JSON.stringify(store), "utf-8");
+}
+
+export async function createPaste(content: string) {
+  const store = await readStore();
+  cleanupExpired(store);
   let id = randomId();
-  while (pasteStore.has(id)) {
+  while (store[id]) {
     id = randomId();
   }
 
@@ -41,14 +61,18 @@ export function createPaste(content: string) {
     createdAt,
     expiresAt: createdAt + PASTE_TTL_MS,
   };
-  pasteStore.set(id, record);
+  store[id] = record;
+  await writeStore(store);
 
   return { id, ...record };
 }
 
-export function getPaste(id: string) {
-  cleanupExpired();
-  const paste = pasteStore.get(id);
+export async function getPaste(id: string) {
+  const store = await readStore();
+  cleanupExpired(store);
+  const paste = store[id];
+  await writeStore(store);
+
   if (!paste) {
     return null;
   }

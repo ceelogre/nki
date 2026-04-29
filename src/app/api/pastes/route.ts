@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const paste = createPaste(content);
+  const paste = await createPaste(content);
   return NextResponse.json({
     id: paste.id,
     expiresAt: paste.expiresAt,
