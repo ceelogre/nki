@@ -1,3 +1,4 @@
+import { Redis } from "@upstash/redis";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -14,6 +15,16 @@ type PasteRecord = {
 };
 
 type PasteStore = Record<string, PasteRecord>;
+
+const redisUrl = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis =
+  redisUrl && redisToken
+    ? new Redis({
+        url: redisUrl,
+        token: redisToken,
+      })
+    : null;
 
 function randomId() {
   let id = "";
@@ -48,12 +59,7 @@ async function writeStore(store: PasteStore) {
 }
 
 export async function createPaste(content: string) {
-  const store = await readStore();
-  cleanupExpired(store);
-  let id = randomId();
-  while (store[id]) {
-    id = randomId();
-  }
+
 
   const createdAt = Date.now();
   const record: PasteRecord = {
@@ -61,6 +67,27 @@ export async function createPaste(content: string) {
     createdAt,
     expiresAt: createdAt + PASTE_TTL_MS,
   };
+
+   if (redis) {
+    // Use atomic NX+EX to avoid id collisions in distributed/serverless runtimes.
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const id = randomId();
+      const created = await redis.set(`paste:${id}`, record, {
+        nx: true,
+        ex: Math.floor(PASTE_TTL_MS / 1000),
+      });
+      if (created) {
+        return { id, ...record };
+      }
+    }
+    throw new Error("Could not allocate unique paste id.");
+  }
+  const store = await readStore();
+  cleanupExpired(store);
+  let id = randomId();
+  while (store[id]) {
+    id = randomId();
+  } 
   store[id] = record;
   await writeStore(store);
 
@@ -68,6 +95,13 @@ export async function createPaste(content: string) {
 }
 
 export async function getPaste(id: string) {
+  if (redis) {
+    const paste = await redis.get<PasteRecord>(`paste:${id}`);
+    if (!paste) {
+      return null;
+    }
+    return { id, ...paste };
+  }
   const store = await readStore();
   cleanupExpired(store);
   const paste = store[id];
