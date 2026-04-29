@@ -101,6 +101,7 @@ export default function Home() {
                 width={180}
                 height={180}
                 unoptimized
+                className={styles.qr}
               />
             </div>
           ) : null}
