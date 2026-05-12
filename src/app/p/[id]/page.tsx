@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPaste, getPasteTtlHours } from "@/lib/pastes";
+import CopyButton from "@/app/p/copy-button";
 import styles from "./paste.module.css";
 
 type PastePageProps = {
@@ -20,9 +21,12 @@ export default async function PastePage({ params }: PastePageProps) {
         <h1>Shared Paste</h1>
         <p className={styles.meta}>This paste expires in {getPasteTtlHours()} hours.</p>
         <pre className={styles.content}>{paste.content}</pre>
-        <Link href="/" className={styles.back}>
-          Create another paste
-        </Link>
+        <div className={styles.actions}>
+          <CopyButton content={paste.content} />
+          <Link href="/" className={styles.back}>
+            Create another paste
+          </Link>
+        </div>
       </main>
     </div>
   );
