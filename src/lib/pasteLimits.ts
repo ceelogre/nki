@@ -1,0 +1,2 @@
+export const PASTE_MAX_TEXT_CHARS = 5000;
+export const PASTE_MAX_MEDIA_BYTES = 100 * 1024 * 1024;
