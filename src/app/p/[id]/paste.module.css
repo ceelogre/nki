@@ -35,6 +35,28 @@
   line-height: 1.5;
 }
 
+.mediaWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.media {
+  width: 100%;
+  max-height: min(72dvh, 640px);
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: #0b0b0f;
+  object-fit: contain;
+}
+
+.mediaCaption {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
 .back {
   color: var(--primary);
   text-decoration: underline;
